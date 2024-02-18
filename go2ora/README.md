@@ -164,10 +164,10 @@ $ go env -w GOPROXY=file://home/goapp/go/pkg/mod/cache/download
 yaml文件及解释：通过yaml.v3提供的方法来实现
 //yaml文件格式如下：config.yaml
 database:
-  server: "192.5.128.227"
+  server: "localhost"
   service_name: "orcl"
   username: "system"
-  password: "oracle2023"
+  password: "***"
 
 check_items:
   - name: 数据库信息
@@ -376,10 +376,10 @@ require (
 准备配置文件
 goapp@VM65195:~/go/src/mygo.space/go2ora> vi config.yaml
 database:
-  server: "192.5.128.227"
+  server: "localhost"
   service_name: "orcl"
   username: "system"
-  password: "oracle2023"
+  password: "***"
 
 check_items:
   - name: 数据库信息
@@ -563,10 +563,10 @@ goapp@VM65195:~/go/src/mygo.space/go2ora> go run odcheck.go
 /home/goapp/go/src/mygo.space/go2ora
 goapp@VM65195:~/go/src/mygo.space/go2ora> cat 208.yaml |more
 database:
-  server: "192.3.65.208"
+  server: "localhost"
   service_name: "orcl"
   username: "system"
-  password: "oracle2023"
+  password: "***"
 
 check_items:
   - name: 数据库信息
@@ -593,7 +593,7 @@ goapp@VM65195:~/go/src/mygo.space/go2ora> ./odcheck -config 208.yaml
 改换下代码
 可能某些DBA场景需要连接不同的数据库执行不同的SQL脚本，将上述代码可以稍微进行修改下。程序接受数据库连接字符串作为参数还有指定SQL脚本文件。假设程序代码为odacheck1.go则执行过程如下：
 
-goapp@VM65195:~/go/src/mygo.space/go2ora> go run odcheck1.go -dsn system/oracle2023@192.3.65.208/orcl -sql tbs.yaml
+goapp@VM65195:~/go/src/mygo.space/go2ora> go run odcheck1.go -dsn system/***@localhost/orcl -sql tbs.yaml
 ...
 上述执行的tbs.yml的定义了关于表空间想的巡检项及其对应的SQL代码。
 
