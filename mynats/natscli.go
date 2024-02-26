@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"strings"
 	"sync"
@@ -9,21 +10,30 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func opts() {
-	servers := []string{"nats://192.168.30.59:4222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"}
-	opts := nats.GetDefaultOptions()
-	opts.Url = strings.Join(servers, ",")
-	opts.Verbose = true
-	opts.Pedantic = true
+// RUN: go run ./myscanner --db mysql --dsn root:<PASSWORD>@tcp(localhost:3306)/db
+var arg_host = flag.String("host", "localhost", "nats server hostname or ip")
+var arg_user = flag.String("user", "", "nats user")
+var arg_password = flag.String("password", "", "")
+
+func init() {
+	flag.Parse()
 }
 
+// func opts() {
+// 	servers := []string{"nats://" + *arg_host + ":4222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"}
+// 	opts := nats.GetDefaultOptions()
+// 	opts.Url = strings.Join(servers, ",")
+// 	opts.Verbose = true
+// 	opts.Pedantic = true
+// }
+
 func main() {
-	servers := []string{"nats://192.168.30.59:4222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"}
+	servers := []string{"nats://" + *arg_host + ":4222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"}
 
 	nc, err := nats.Connect(
 		strings.Join(servers, ","),
 		nats.Name("API Name for client"),
-		nats.UserInfo("idss", "natsidss"),
+		nats.UserInfo(*arg_user, *arg_password),
 		nats.Timeout(10*time.Second),
 		nats.PingInterval(20*time.Second),
 		nats.MaxPingsOutstanding(5),
@@ -51,7 +61,7 @@ func main() {
 		}), // logSlowConsumer
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Connect failed: ", err)
 	}
 	defer nc.Close()
 
