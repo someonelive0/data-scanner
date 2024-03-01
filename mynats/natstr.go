@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -65,62 +65,29 @@ func main() {
 	defer nc.Close()
 
 	// Do something with the connection
-	mp := nc.MaxPayload()
-	log.Printf("Maximum payload is %v bytes", mp)
-
-	getStatusTxt := func(nc *nats.Conn) string {
-		switch nc.Status() {
-		case nats.CONNECTED:
-			return "Connected"
-		case nats.CLOSED:
-			return "Closed"
-		default:
-			return "Other"
-		}
-	}
-	log.Printf("The connection is %v\n", getStatusTxt(nc))
-
-	// // Subscribe
-	// sub, err := nc.SubscribeSync("updates")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// // Wait for a message
-	// msg, err := sub.NextMsg(10 * time.Second)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// if err := sub.Unsubscribe(); err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// // Use the response
-	// log.Printf("Reply: %s", msg.Data)
-
-	// Use a WaitGroup to wait for a message to arrive
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-
-	// Subscribe
-	sub, err := nc.Subscribe("updates", func(m *nats.Msg) {
-		wg.Done()
-	})
+	// Use the JetStream context to produce and consumer messages
+	// that have been persisted.
+	js, err := nc.JetStream(nats.PublishAsyncMaxPending(256))
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := sub.Unsubscribe(); err != nil {
-		log.Fatal(err)
+
+	js.AddStream(&nats.StreamConfig{
+		Name:     "kvs-tmp",
+		Subjects: []string{"foo-kvs"},
+	})
+
+	js.Publish("foo-kvs", []byte("Hello JS!"))
+
+	// Publish messages asynchronously.
+	for i := 0; i < 500; i++ {
+		js.PublishAsync("foo-kvs", []byte("Hello JS Async!"))
+	}
+	select {
+	case <-js.PublishAsyncComplete():
+	case <-time.After(5 * time.Second):
+		fmt.Println("Did not resolve in time")
 	}
 
-	// // Create a queue subscription on "updates" with queue name "workers"
-	// if _, err := nc.QueueSubscribe("updates", "workers", func(m *nats.Msg) {
-	// 	wg.Done()
-	// }); err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// Wait for a message to come in
-	wg.Wait()
-
+	fmt.Println("END")
 }
